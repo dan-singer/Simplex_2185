@@ -7,6 +7,8 @@ Date: 2017/05
 
 #include "Definitions.h"
 
+#include "MyMesh.h"
+
 #include "ControllerConfiguration.h"
 #include "imgui\ImGuiObject.h"
 
@@ -15,6 +17,8 @@ class Application
 	String m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
 private:
 	static ImGuiObject gui; //GUI object
+
+	MyMesh* m_pMesh;
 
 	uint m_uRenderCallCount = 0; //count of render calls per frame
 	uint m_uControllerCount = 0; //count of controllers connected

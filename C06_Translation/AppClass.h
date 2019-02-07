@@ -37,6 +37,8 @@ class AppClass
 	matrix4 m_m4Model = matrix4(1.0f); //Identity matrix
 	vector3 m_v3Color = vector3(-1.0f); //Color of shape
 
+	
+
 	bool m_bRunning = true; //Running Flag
 	
 public:
