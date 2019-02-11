@@ -62,6 +62,8 @@ void MyMesh::CompileOpenGL3X()
 
 void MyMesh::Render(matrix4 a_m4Model, matrix4 a_m4View, matrix4 a_m4Projection)
 {
+	glUseProgram(m_shaderProgramId);
+	glBindVertexArray(m_uVAO);
 	//read uniforms and send values
 	GLuint MVP = glGetUniformLocation(m_shaderProgramId, "MVP");//Model View Projection
 	glUniformMatrix4fv(MVP, 1, GL_FALSE, glm::value_ptr(a_m4Projection * a_m4View * a_m4Model));
