@@ -14,11 +14,16 @@ Date: 2017/05
 
 class Application
 {
-	std::vector<MyMesh*> invaderMeshes;
-	unsigned char** invaderMap;
+
 	String m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
 
 private:
+
+	std::vector<MyMesh*> m_invaderMeshes;
+	unsigned char** m_invaderMap;
+	const char ROWS = 8;
+	const char COLS = 11;
+
 	static ImGuiObject gui; //GUI object
 
 	uint m_uRenderCallCount = 0; //count of render calls per frame
