@@ -275,9 +275,25 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	vector3 center(0, -a_fHeight/2, 0);
+	vector3 tip = vector3(0, a_fHeight / 2, 0);
+	std::vector<vector3> base;
+
+	// Generate a circle
+	for (int i = 0; i < a_nSubdivisions; ++i) {
+		float angle = ((float)i / a_nSubdivisions) * (PI * 2);
+		vector3 point(cos(angle) * a_fRadius, center.y, sin(angle) * a_fRadius);
+		base.push_back(point);
+	}
+
+	// Connect the circle tris and upper tris
+	for (int i = 0; i < base.size() - 1; ++i) {
+		AddTri(center, base[i], base[i + 1]);
+		AddTri(tip, base[i + 1], base[i]);
+	}
+	AddTri(center, base[base.size() - 1], base[0]);
+	AddTri(tip, base[0], base[base.size() - 1]);
+
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -299,9 +315,27 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	vector3 base(0, -a_fHeight / 2, 0);
+	vector3 top(0, a_fHeight / 2, 0);
+
+	vector3 tip = vector3(0, a_fHeight / 2, 0);
+	std::vector<vector3> baseVerts, topVerts;
+
+	// Generate circles
+	for (int i = 0; i < a_nSubdivisions; ++i) {
+		float angle = ((float)i / a_nSubdivisions) * (PI * 2);
+		vector3 point(cos(angle) * a_fRadius, base.y, sin(angle) * -a_fRadius);
+		baseVerts.push_back(point);
+		topVerts.push_back(point + vector3(0, a_fHeight, 0));
+	}
+	// Add tris
+	for (int i = 0; i < baseVerts.size(); ++i) {
+		int first = i;
+		int second = i + 1 == baseVerts.size() ? 0 : i + 1;
+		AddTri(base, baseVerts[second], baseVerts[first]); //TODO figure out why this works
+		AddTri(top, topVerts[first], topVerts[second]);
+		AddQuad(baseVerts[first], baseVerts[second], topVerts[first], topVerts[second]);
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -329,8 +363,36 @@ void MyMesh::GenerateTube(float a_fOuterRadius, float a_fInnerRadius, float a_fH
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
+	vector3 base(0, -a_fHeight / 2, 0);
+	vector3 top(0, a_fHeight / 2, 0);
+
+	std::vector<vector3> baseInner, baseOuter, topInner, topOuter;
+
+	// Generate circles
+	for (int i = 0; i < a_nSubdivisions; ++i) {
+		float angle = ((float)i / a_nSubdivisions) * (PI * 2);
+		vector3 innerPoint(cos(angle) * a_fInnerRadius, base.y, sin(-angle) * a_fInnerRadius);
+		vector3 outerPoint(cos(angle) * a_fOuterRadius, base.y, sin(-angle) * a_fOuterRadius);
+
+		baseInner.push_back(innerPoint);
+		topInner.push_back(innerPoint + vector3(0, a_fHeight, 0));
+
+		baseOuter.push_back(outerPoint);
+		topOuter.push_back(outerPoint + vector3(0, a_fHeight, 0));
+	}
+	// Add tris
+	for (int i = 0; i < baseInner.size(); ++i) {
+		int first = i;
+		int second = i + 1 == baseInner.size() ? 0 : i + 1;
+
+		// Top and bottom
+		AddQuad(baseOuter[second], baseOuter[first], baseInner[second], baseInner[first]);
+		AddQuad(topOuter[first], topOuter[second], topInner[first], topInner[second]);
+		// Outer 
+		AddQuad(baseOuter[first], baseOuter[second], topOuter[first], topOuter[second]);
+		AddQuad(baseInner[second], baseInner[first], topInner[second], topInner[first]);
+
+	}
 	// -------------------------------
 
 	// Adding information about color
@@ -362,7 +424,8 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Init();
 
 	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
+	
+
 	// -------------------------------
 
 	// Adding information about color
@@ -380,14 +443,47 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 		GenerateCube(a_fRadius * 2.0f, a_v3Color);
 		return;
 	}
-	if (a_nSubdivisions > 6)
-		a_nSubdivisions = 6;
+	if (a_nSubdivisions > 10)
+		a_nSubdivisions = 10;
 
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fRadius * 2.0f, a_v3Color);
+	// Based off of http://www.songho.ca/opengl/gl_sphere.html
+
+	// Generate the vertices of the sphere
+	std::vector<vector3> vertices;
+	int sectorCount = a_nSubdivisions;
+	int stackCount = a_nSubdivisions;
+	for (int i = 0; i <= stackCount; ++i) {
+		float stackAngle = (PI / 2) - (PI * (i / (float)stackCount));
+		for (int j = 0; j <= sectorCount; ++j) {
+			float sectorAngle = (PI * 2) * (j / (float)sectorCount);
+			vector3 pointOnSphere(
+				(a_fRadius * cos(stackAngle)) * cos(sectorAngle),
+				(a_fRadius * cos(stackAngle)) * sin(sectorAngle),
+				a_fRadius * sin(stackAngle)
+			);
+			vertices.push_back(pointOnSphere);
+		}
+	}
+
+	// Add quads and tris
+	for (int i = 0; i < stackCount; ++i) {
+		int k1 = i * (sectorCount + 1); // beginning of current stack
+		int k2 = k1 + sectorCount + 1; // beginning of next stack
+		for (int j = 0; j <= sectorCount; ++j) {
+			if (i != 0) {
+				AddTri(vertices[k1], vertices[k2], vertices[k1 + 1]);
+			}
+			if (i != (stackCount - 1)) {
+				AddTri(vertices[k1 + 1], vertices[k2], vertices[k2 + 1]);
+			}
+			k1++;
+			k2++;
+		}
+	}
+
 	// -------------------------------
 
 	// Adding information about color
