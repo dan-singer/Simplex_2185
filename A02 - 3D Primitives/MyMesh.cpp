@@ -275,25 +275,24 @@ void MyMesh::GenerateCone(float a_fRadius, float a_fHeight, int a_nSubdivisions,
 	Release();
 	Init();
 
-	vector3 center(0, -a_fHeight/2, 0);
+	vector3 base(0, -a_fHeight/2, 0);
 	vector3 tip = vector3(0, a_fHeight / 2, 0);
-	std::vector<vector3> base;
+	std::vector<vector3> baseVertices;
 
 	// Generate a circle
 	for (int i = 0; i < a_nSubdivisions; ++i) {
 		float angle = ((float)i / a_nSubdivisions) * (PI * 2);
-		vector3 point(cos(angle) * a_fRadius, center.y, sin(angle) * a_fRadius);
-		base.push_back(point);
+		vector3 point(cos(angle) * a_fRadius, base.y, sin(-angle) * a_fRadius);
+		baseVertices.push_back(point);
 	}
 
 	// Connect the circle tris and upper tris
-	for (int i = 0; i < base.size() - 1; ++i) {
-		AddTri(center, base[i], base[i + 1]);
-		AddTri(tip, base[i + 1], base[i]);
+	for (int i = 0; i < baseVertices.size(); ++i) {
+		float first = i;
+		float second = i + 1 == baseVertices.size() ? 0 : i + 1;
+		AddTri(base, baseVertices[second], baseVertices[first]);
+		AddTri(tip, baseVertices[first], baseVertices[second]);
 	}
-	AddTri(center, base[base.size() - 1], base[0]);
-	AddTri(tip, base[0], base[base.size() - 1]);
-
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
@@ -324,7 +323,7 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	// Generate circles
 	for (int i = 0; i < a_nSubdivisions; ++i) {
 		float angle = ((float)i / a_nSubdivisions) * (PI * 2);
-		vector3 point(cos(angle) * a_fRadius, base.y, sin(angle) * -a_fRadius);
+		vector3 point(cos(angle) * a_fRadius, base.y, sin(-angle) * a_fRadius);
 		baseVerts.push_back(point);
 		topVerts.push_back(point + vector3(0, a_fHeight, 0));
 	}
@@ -332,7 +331,7 @@ void MyMesh::GenerateCylinder(float a_fRadius, float a_fHeight, int a_nSubdivisi
 	for (int i = 0; i < baseVerts.size(); ++i) {
 		int first = i;
 		int second = i + 1 == baseVerts.size() ? 0 : i + 1;
-		AddTri(base, baseVerts[second], baseVerts[first]); //TODO figure out why this works
+		AddTri(base, baseVerts[second], baseVerts[first]); 
 		AddTri(top, topVerts[first], topVerts[second]);
 		AddQuad(baseVerts[first], baseVerts[second], topVerts[first], topVerts[second]);
 	}
@@ -423,8 +422,49 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Release();
 	Init();
 
-	// Replace this with your code
-	
+	// Generate the vertices
+	std::vector<vector3> vertices;
+	vector3 center(0);
+	float ringRadius = (a_fOuterRadius - a_fInnerRadius) / 2;
+	float ringReach = a_fInnerRadius + ringRadius;
+
+	// SubdivisionsA is the number of rings, B is the number of points that make up those rings
+	for (int i = 0; i < a_nSubdivisionsA; ++i) {
+		float angle = (i / (float)a_nSubdivisionsA) * (PI * 2);
+		vector3 ringCenter(cos(angle) * ringReach, center.y, sin(-angle) * ringReach);
+		vector3 ringRadiusVec = glm::normalize(ringCenter) * ringRadius;
+		for (int j = 0; j < a_nSubdivisionsB; ++j) {
+			float ringAngle = (j / (float)a_nSubdivisionsB) * (PI * 2);
+			vector3 ringPt = glm::rotateZ(ringRadiusVec, ringAngle);
+			vertices.push_back(ringCenter + ringPt);
+		}
+	}
+
+	// Connect the vertices
+	for (int i = 0; i < a_nSubdivisionsA * a_nSubdivisionsB; ++i) {
+		int first = i;
+		int second = i + a_nSubdivisionsB;
+		int third = i + 1;
+		int fourth = i + 1 + a_nSubdivisionsB;
+
+		// If this is the last ring, connect back to the first
+		if (i / a_nSubdivisionsA == a_nSubdivisionsB - 1) {
+			second = i % a_nSubdivisionsB;
+			fourth = (i + 1) % a_nSubdivisionsB;
+		}
+		// If this is the last vertex of the ring, connect back to the first vertex of the ring
+		if ((i + 1) % a_nSubdivisionsB == 0) {
+			third = i + 1 - a_nSubdivisionsB;
+			fourth = third + a_nSubdivisionsB;
+		}
+		
+		if (i / a_nSubdivisionsA == a_nSubdivisionsB - 1 && ((i + 1) % a_nSubdivisionsB == 0)) {
+			fourth = 0;
+		}
+
+
+		AddQuad(vertices[first], vertices[second], vertices[third], vertices[fourth]);
+	}
 
 	// -------------------------------
 
@@ -450,7 +490,6 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 	Init();
 
 	// Based off of http://www.songho.ca/opengl/gl_sphere.html
-
 	// Generate the vertices of the sphere
 	std::vector<vector3> vertices;
 	int sectorCount = a_nSubdivisions;
