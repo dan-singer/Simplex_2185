@@ -423,7 +423,7 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Init();
 
 	// Generate the vertices
-	std::vector<vector3> vertices;
+	std::vector<std::vector<vector3>> ringVertices;
 	vector3 center(0);
 	float ringRadius = (a_fOuterRadius - a_fInnerRadius) / 2;
 	float ringReach = a_fInnerRadius + ringRadius;
@@ -433,37 +433,28 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 		float angle = (i / (float)a_nSubdivisionsA) * (PI * 2);
 		vector3 ringCenter(cos(angle) * ringReach, center.y, sin(-angle) * ringReach);
 		vector3 ringRadiusVec = glm::normalize(ringCenter) * ringRadius;
+		// The axis of rotation is perpendicular to the radius vector
+		vector3 rotationAxis = glm::rotate(ringRadiusVec, static_cast<float>(PI) / 2, vector3(0, 1, 0));
+		ringVertices.push_back(std::vector<vector3>());
 		for (int j = 0; j < a_nSubdivisionsB; ++j) {
 			float ringAngle = (j / (float)a_nSubdivisionsB) * (PI * 2);
-			vector3 ringPt = glm::rotateZ(ringRadiusVec, ringAngle);
-			vertices.push_back(ringCenter + ringPt);
+			vector3 ringPt = glm::rotate(ringRadiusVec, ringAngle, rotationAxis);
+			ringVertices[i].push_back(ringCenter + ringPt);
 		}
 	}
 
 	// Connect the vertices
-	for (int i = 0; i < a_nSubdivisionsA * a_nSubdivisionsB; ++i) {
-		int first = i;
-		int second = i + a_nSubdivisionsB;
-		int third = i + 1;
-		int fourth = i + 1 + a_nSubdivisionsB;
-
-		// If this is the last ring, connect back to the first
-		if (i / a_nSubdivisionsA == a_nSubdivisionsB - 1) {
-			second = i % a_nSubdivisionsB;
-			fourth = (i + 1) % a_nSubdivisionsB;
+	for (int i = 0; i < a_nSubdivisionsA; ++i) {
+		for (int j = 0; j < a_nSubdivisionsB; ++j) {
+			int firstRing = i;
+			int secondRing = i + 1 == a_nSubdivisionsA ? 0 : i + 1;
+			int firstRingVert = j;
+			int secondRingVert = j + 1 == a_nSubdivisionsB ? 0 : j + 1;
+			AddQuad(
+				 ringVertices[secondRing][firstRingVert], ringVertices[firstRing][firstRingVert],
+				 ringVertices[secondRing][secondRingVert], ringVertices[firstRing][secondRingVert]
+			);
 		}
-		// If this is the last vertex of the ring, connect back to the first vertex of the ring
-		if ((i + 1) % a_nSubdivisionsB == 0) {
-			third = i + 1 - a_nSubdivisionsB;
-			fourth = third + a_nSubdivisionsB;
-		}
-		
-		if (i / a_nSubdivisionsA == a_nSubdivisionsB - 1 && ((i + 1) % a_nSubdivisionsB == 0)) {
-			fourth = 0;
-		}
-
-
-		AddQuad(vertices[first], vertices[second], vertices[third], vertices[fourth]);
 	}
 
 	// -------------------------------
@@ -483,8 +474,8 @@ void MyMesh::GenerateSphere(float a_fRadius, int a_nSubdivisions, vector3 a_v3Co
 		GenerateCube(a_fRadius * 2.0f, a_v3Color);
 		return;
 	}
-	if (a_nSubdivisions > 10)
-		a_nSubdivisions = 10;
+	if (a_nSubdivisions > 20)
+		a_nSubdivisions = 20;
 
 	Release();
 	Init();
