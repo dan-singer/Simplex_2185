@@ -54,12 +54,19 @@ void Application::Display(void)
 	//calculate the current position
 	vector3 v3CurrentPos;
 	
-
-
-
-
 	//your code goes here
-	v3CurrentPos = vector3(0.0f, 0.0f, 0.0f);
+	static uint firstIndex = 0;
+	static uint secondIndex = 1;
+
+	if (fTimer - m_prevTime >= m_timeBetweenPaths) {
+		m_prevTime = fTimer;
+		firstIndex = (firstIndex + 1) % m_stopsList.size();
+		secondIndex = (secondIndex + 1) % m_stopsList.size();
+	}
+
+	float t = (fTimer - m_prevTime) / m_timeBetweenPaths;
+	v3CurrentPos = glm::lerp(m_stopsList[firstIndex], m_stopsList[secondIndex], t);
+
 	//-------------------
 	
 
