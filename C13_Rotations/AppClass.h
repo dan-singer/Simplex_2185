@@ -16,6 +16,7 @@ class Application
 {
 	String m_sProgrammer = "Alberto Bobadilla - labigm@rit.edu";
 	MyMesh* m_pMesh = nullptr;
+	vector3 m_v3Rotations;
 
 private:
 	static ImGuiObject gui; //GUI object

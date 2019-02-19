@@ -27,17 +27,23 @@ void Application::Display(void)
 
 	matrix4 m4View = m_pCameraMngr->GetViewMatrix(); //view Matrix
 	matrix4 m4Projection = m_pCameraMngr->GetProjectionMatrix(); //Projection Matrix
+	matrix4 m4Model = IDENTITY_M4;
+
 	
 	//Get a timer
 	static uint uClock = m_pSystem->GenClock();
 	float fTimer = m_pSystem->GetTimeSinceStart(uClock);
 
-	//calculate the current position
-	matrix4 m4Rotation = glm::rotate(IDENTITY_M4, glm::radians(fTimer * 60.0f), vector3(0.0f, 0.0f, 1.0f));
-	matrix4 m4Model;
-	for (uint i = 0; i < 2500; ++i)
-		m4Model = m4Rotation * glm::translate(IDENTITY_M4, vector3(2.5f, 0.0f, 0.0f)) * glm::transpose(m4Rotation);
-	
+	matrix4 m4Rot = glm::rotate(IDENTITY_M4, glm::radians(fTimer * m_pSystem->GetFPS()), AXIS_Z);
+	matrix4 m4RotInv = glm::rotate(IDENTITY_M4, glm::radians(-fTimer * m_pSystem->GetFPS()), AXIS_Z);
+	matrix4 m4Trans = glm::translate(vector3(1, 0, 0));
+
+	// m4Model = m4Rot * m4Trans * m4RotInv;
+	m4Model = m4Rot * m4Trans * glm::transpose(m4Rot);
+
+	// For purely rotational matrices, transposes are the same as inverses
+
+
 	/*
 	//extra part, how to rotate around a point (in this case the base of the cone)
 	matrix4 m4Translation = glm::translate(IDENTITY_M4, vector3(0.0f, 0.5f, 0.0f));

@@ -136,6 +136,18 @@ void Application::ProcessKeyReleased(sf::Event a_event)
 	gui.io.KeysDown[a_event.key.code] = false;
 	gui.io.KeyCtrl = a_event.key.control;
 	gui.io.KeyShift = a_event.key.shift;
+
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::R)) {
+		m_v3Rotations = vector3(0);
+	} 
+	if (sf::Keyboard::isKeyPressed(sf::Keyboard::X)) {
+		m_v3Rotations += 1.0f;
+		if (sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)) {
+			m_v3Rotations.y -= 2.0f;
+		}
+
+	}
+
 }
 //Joystick
 void Application::ProcessJoystickConnected(uint nController)
