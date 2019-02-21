@@ -34,6 +34,7 @@ void Application::Display(void)
 	static uint uClock = m_pSystem->GenClock();
 	float fTimer = m_pSystem->GetTimeSinceStart(uClock);
 
+	/*2-19
 	matrix4 m4Rot = glm::rotate(IDENTITY_M4, glm::radians(fTimer * m_pSystem->GetFPS()), AXIS_Z);
 	matrix4 m4RotInv = glm::rotate(IDENTITY_M4, glm::radians(-fTimer * m_pSystem->GetFPS()), AXIS_Z);
 	matrix4 m4Trans = glm::translate(vector3(1, 0, 0));
@@ -42,7 +43,19 @@ void Application::Display(void)
 	m4Model = m4Rot * m4Trans * glm::transpose(m4Rot);
 
 	// For purely rotational matrices, transposes are the same as inverses
+	*/
 
+
+	// Orientation is the state, rotation is the movement
+	glm::quat q1 = glm::angleAxis(glm::radians(0.0f), AXIS_Z);
+	quaternion q2 = glm::angleAxis(glm::radians(180.0f), AXIS_Z); // quaternion = glm::quat
+
+	float fTotalTime = 1.0f;
+	float fPercentage = MapValue(fTimer, 0.0f, fTotalTime, 0.0f, 1.0f);
+	quaternion q3 = glm::mix(q1, q2, fPercentage);
+	quaternion q4 = q1 * q2; // same as glm::cross(q1,q2);
+
+	m_pMesh->Render(m4Projection, m4View, ToMatrix4(q3));
 
 	/*
 	//extra part, how to rotate around a point (in this case the base of the cone)
@@ -52,7 +65,7 @@ void Application::Display(void)
 	*/
 
 	// render the object
-	m_pMesh->Render(m4Projection, m4View, m4Model);
+	// m_pMesh->Render(m4Projection, m4View, m4Model);
 	
 	// draw a skybox
 	m_pMeshMngr->AddSkyboxToRenderList();
