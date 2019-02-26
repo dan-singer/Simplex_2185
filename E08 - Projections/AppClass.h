@@ -16,6 +16,7 @@ namespace Simplex
 
 class Application
 {
+	vector3 m_v3Eye = vector3(0, 0, 10);
 	MyMesh* m_pMesh1 = nullptr; //Primitive to display
 	MyMesh* m_pMesh2 = nullptr; //Primitive to display
 	MyMesh* m_pMesh3 = nullptr; //Primitive to display

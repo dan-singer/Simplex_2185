@@ -41,6 +41,12 @@ void Application::Display(void)
 {
 	//Clear the screen
 	ClearScreen();
+
+	vector3 v3Eye(0, 10, 0);
+	vector3 v3Center(0, 0, 0);
+	vector3 v3Up(0, 1, 0);
+
+	matrix4 m4View = glm::lookAt(v3Eye, v3Center, v3Up);
 	
 	//draw a skybox
 	m_pMeshMngr->AddSkyboxToRenderList();
