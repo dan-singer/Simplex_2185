@@ -59,10 +59,10 @@ void Application::Display(void)
 		m_pCamera->ResetCamera();
 		break;
 	case 2:
-		m_pCamera->ResetCamera();
+		m_pCamera->SetPerspective(false);
 		break;
 	case 3:
-		m_pCamera->ResetCamera();
+		m_pCamera->SetPosition(AXIS_X * 10.0f);
 		break;
 	case 4:
 		m_pCamera->ResetCamera();
