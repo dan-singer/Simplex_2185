@@ -85,10 +85,34 @@ void MyRigidBody::SetModelMatrix(matrix4 a_m4ModelMatrix)
 	m_m4ToWorld = a_m4ModelMatrix;
 	
 	//your code goes here---------------------
-	m_v3MinG = m_v3MinL;
-	m_v3MaxG = m_v3MaxL;
-	//----------------------------------------
+	const int MAX = 10000;
+	m_v3MaxG = vector3(-MAX);
+	m_v3MinG = vector3(MAX);
 
+	vector3 m = m_v3MinL, M = m_v3MaxL;
+	vector3 points[8];
+	points[0] = m_v3MinL;
+	points[1] = m_v3MaxL;
+	points[2] = vector3(m.x, M.y, m.z);
+	points[3] = vector3(m.x, M.y, M.z);
+	points[4] = vector3(m.x, m.y, M.z);
+	points[5] = vector3(M.x, m.y, m.z);
+	points[6] = vector3(M.x, m.y, m.z);
+	points[7] = vector3(M.x, M.y, m.z);
+	for (int i = 0; i < 8; ++i) 
+	{
+		points[i] = m_m4ToWorld * vector4(points[i], 1); // convert to global space
+
+		if (m_v3MaxG.x < points[i].x) m_v3MaxG.x = points[i].x;
+		else if (m_v3MinG.x > points[i].x) m_v3MinG.x = points[i].x;
+
+		if (m_v3MaxG.y < points[i].y) m_v3MaxG.y = points[i].y;
+		else if (m_v3MinG.y > points[i].y) m_v3MinG.y = points[i].y;
+
+		if (m_v3MaxG.z < points[i].z) m_v3MaxG.z = points[i].z;
+		else if (m_v3MinG.z > points[i].z) m_v3MinG.z = points[i].z;
+	}
+	//----------------------------------------
 	//we calculate the distance between min and max vectors
 	m_v3ARBBSize = m_v3MaxG - m_v3MinG;
 }
