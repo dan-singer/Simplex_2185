@@ -287,6 +287,96 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	(eSATResults::SAT_NONE has a value of 0)
 	*/
 
-	//there is no axis test that separates this two objects
-	return eSATResults::SAT_NONE;
+	// 1 = there is a separating axis
+	// 0 = they must be intersecting
+
+	float EPSILON = 0.0001f;
+	float radiusA, radiusB;
+	matrix3 RotMatrix, AbsRotMatrix;
+	
+	// Determine the local axes of this rb
+	vector3 localAxes[3];
+	localAxes[0] = vector3(m_m4ToWorld * vector4(1, 0, 0, 0)); // we use 0 to avoid translation
+	localAxes[1] = vector3(m_m4ToWorld * vector4(0, 1, 0, 0));
+	localAxes[2] = vector3(m_m4ToWorld * vector4(0, 0, 1, 0));
+
+	// Determine the local axes of the other rb
+	vector3 otherLocalAxes[3];
+	otherLocalAxes[0] = vector3(a_pOther->GetModelMatrix() * vector4(1, 0, 0, 0));
+	otherLocalAxes[1] = vector3(a_pOther->GetModelMatrix() * vector4(0, 1, 0, 0));
+	otherLocalAxes[2] = vector3(a_pOther->GetModelMatrix() * vector4(0, 0, 1, 0));
+
+	// Compute rotation matrix expressing b in a’s coordinate frame
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			RotMatrix[i][j] = glm::dot(localAxes[i], otherLocalAxes[j]);
+	// Compute translation vector t
+	vector3 t = a_pOther->GetCenterGlobal() - GetCenterGlobal();
+	// Bring translation into a’s coordinate frame
+	t = vector3(glm::dot(t, localAxes[0]), glm::dot(t, localAxes[1]), glm::dot(t, localAxes[2]));
+
+	// Compute common subexpressions. 
+	for (int i = 0; i < 3; i++)
+		for (int j = 0; j < 3; j++)
+			AbsRotMatrix[i][j] = std::abs(RotMatrix[i][j]) + EPSILON;
+	// Test axes L = A0, L = A1, L = A2
+	for (int i = 0; i < 3; i++) {
+		radiusA = m_v3HalfWidth[i];
+		radiusB = a_pOther->m_v3HalfWidth[0] * AbsRotMatrix[i][0] + a_pOther->m_v3HalfWidth[1] * AbsRotMatrix[i][1] + a_pOther->m_v3HalfWidth[2] * AbsRotMatrix[i][2];
+		if (std::abs(t[i]) > radiusA + radiusB) return 1;
+	}
+	// Test axes L = B0, L = B1, L = B2
+	for (int i = 0; i < 3; i++) {
+		radiusA = m_v3HalfWidth[0] * AbsRotMatrix[0][i] + m_v3HalfWidth[1] * AbsRotMatrix[1][i] + m_v3HalfWidth[2] * AbsRotMatrix[2][i];
+		radiusB = a_pOther->m_v3HalfWidth[i];
+		if (std::abs(t[0] * RotMatrix[0][i] + t[1] * RotMatrix[1][i] + t[2] * RotMatrix[2][i]) > radiusA + radiusB) return 1;
+	}
+	// Test axis L = A0 x B0
+	radiusA = m_v3HalfWidth[1] * AbsRotMatrix[2][0] + m_v3HalfWidth[2] * AbsRotMatrix[1][0];
+	radiusB = a_pOther->m_v3HalfWidth[1] * AbsRotMatrix[0][2] + a_pOther->m_v3HalfWidth[2] * AbsRotMatrix[0][1];
+	if (std::abs(t[2] * RotMatrix[1][0] - t[1] * RotMatrix[2][0]) > radiusA + radiusB) return 1;
+
+	// Text axis L = A0 x B1
+	radiusA = m_v3HalfWidth[1] * AbsRotMatrix[2][1] + m_v3HalfWidth[2] * AbsRotMatrix[1][1];
+	radiusB = a_pOther->m_v3HalfWidth[0] * AbsRotMatrix[0][2] + a_pOther->m_v3HalfWidth[2] * AbsRotMatrix[0][0];
+	if (std::abs(t[2] * RotMatrix[1][1] - t[1] * RotMatrix[2][1]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A0 x B2
+	radiusA = m_v3HalfWidth[1] * AbsRotMatrix[2][2] + m_v3HalfWidth[2] * AbsRotMatrix[1][2];
+	radiusB = a_pOther->m_v3HalfWidth[0] * AbsRotMatrix[0][1] + a_pOther->m_v3HalfWidth[1] * AbsRotMatrix[0][0];
+	if (std::abs(t[2] * RotMatrix[1][2] - t[1] * RotMatrix[2][2]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A1 x B0
+	radiusA = m_v3HalfWidth[0] * AbsRotMatrix[2][0] + m_v3HalfWidth[2] * AbsRotMatrix[0][0];
+	radiusB = a_pOther->m_v3HalfWidth[1] * AbsRotMatrix[1][2] + a_pOther->m_v3HalfWidth[2] * AbsRotMatrix[1][1];
+	if (std::abs(t[0] * RotMatrix[2][0] - t[2] * RotMatrix[0][0]) > radiusA + radiusB) return 1;
+
+	// Text axis L = A1 x B1
+	radiusA = m_v3HalfWidth[0] * AbsRotMatrix[2][1] + m_v3HalfWidth[2] * AbsRotMatrix[0][1];
+	radiusB = a_pOther->m_v3HalfWidth[0] * AbsRotMatrix[1][2] + a_pOther->m_v3HalfWidth[2] * AbsRotMatrix[1][0];
+	if (std::abs(t[0] * RotMatrix[2][1] - t[2] * RotMatrix[0][1]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A1 x B2
+	radiusA = m_v3HalfWidth[0] * AbsRotMatrix[2][2] + m_v3HalfWidth[2] * AbsRotMatrix[0][2];
+	radiusB = a_pOther->m_v3HalfWidth[0] * AbsRotMatrix[1][1] + a_pOther->m_v3HalfWidth[1] * AbsRotMatrix[1][0];
+	if (std::abs(t[0] * RotMatrix[2][2] - t[2] * RotMatrix[0][2]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A2 x B0
+	radiusA = m_v3HalfWidth[0] * AbsRotMatrix[1][0] + m_v3HalfWidth[1] * AbsRotMatrix[0][0];
+	radiusB = a_pOther->m_v3HalfWidth[1] * AbsRotMatrix[2][2] + a_pOther->m_v3HalfWidth[2] * AbsRotMatrix[2][1];
+	if (std::abs(t[1] * RotMatrix[0][0] - t[0] * RotMatrix[1][0]) > radiusA + radiusB) return 1;
+
+	// Test axis L = A2 x B1
+	radiusA = m_v3HalfWidth[0] * AbsRotMatrix[1][1] + m_v3HalfWidth[1] * AbsRotMatrix[0][1];
+	radiusB = a_pOther->m_v3HalfWidth[0] * AbsRotMatrix[2][2] + a_pOther->m_v3HalfWidth[2] * AbsRotMatrix[2][0];
+	if (std::abs(t[1] * RotMatrix[0][1] - t[0] * RotMatrix[1][1]) > radiusA + radiusB) return 1;
+
+	// Text axis L = A2 x B2
+	radiusA = m_v3HalfWidth[0] * AbsRotMatrix[1][2] + m_v3HalfWidth[1] * AbsRotMatrix[0][2];
+	radiusB = a_pOther->m_v3HalfWidth[0] * AbsRotMatrix[2][1] + a_pOther->m_v3HalfWidth[1] * AbsRotMatrix[2][0];
+	if (std::abs(t[1] * RotMatrix[0][2] - t[0] * RotMatrix[1][2]) > radiusA + radiusB) return 1;
+
+	// There was no separating axis, so the OBBs must be intersecting 
+	return 0;
+	
 }
