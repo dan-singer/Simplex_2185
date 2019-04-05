@@ -1,4 +1,5 @@
 #include "MyEntityManager.h"
+#include "Octree.h"
 using namespace Simplex;
 //  MyEntityManager
 Simplex::MyEntityManager* Simplex::MyEntityManager::m_pInstance = nullptr;
@@ -6,6 +7,7 @@ void Simplex::MyEntityManager::Init(void)
 {
 	m_uEntityCount = 0;
 	m_mEntityArray = nullptr;
+
 }
 void Simplex::MyEntityManager::Release(void)
 {
@@ -175,13 +177,27 @@ void Simplex::MyEntityManager::Update(void)
 
 	//check collisions
 	// TODO replace this with octree tests
-	for (uint i = 0; i < m_uEntityCount - 1; i++)
+	/*for (uint i = 0; i < m_uEntityCount - 1; i++)
 	{
 		for (uint j = i + 1; j < m_uEntityCount; j++)
 		{
 			m_mEntityArray[i]->IsColliding(m_mEntityArray[j]);
 		}
+	}*/
+	std::vector<uint> ids;
+	for (int i = 0; i < m_uEntityCount; ++i)
+	{
+		ids.push_back(i);
 	}
+
+
+
+	Octree tree(BoundingBox(vector3(-1000, -1000, -1000), vector3(1000, 1000, 1000)), ids);
+	tree.BuildTree();
+	//tree.GetIntersection(std::vector<uint>());
+	// TODO figure out why there is only like one child being attached
+	std::cout << tree.m_childNodes[0]->m_entities.size();
+
 }
 void Simplex::MyEntityManager::AddEntity(String a_sFileName, String a_sUniqueID)
 {

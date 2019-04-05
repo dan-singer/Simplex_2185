@@ -25,31 +25,36 @@ namespace Simplex
 		bool CompletelyContains(BoundingBox other)
 		{
 			return (
-				other.min.x >= min.x && other.max.x <= min.x &&
-				other.min.y >= min.x && other.max.y <= min.y &&
-				other.min.z >= min.x && other.max.z <= min.y
+				other.min.x >= min.x && other.max.x <= max.x &&
+				other.min.y >= min.y && other.max.y <= max.y &&
+				other.min.z >= min.z && other.max.z <= max.z
 				);
 		}
 	};
 
 	class Octree
 	{
-	private:
+	public:
 		BoundingBox m_region;
 		std::vector<uint> m_entities;
-		Octree* m_childNodes = new Octree[8];
+		Octree** m_childNodes = new Octree*[8]{};
 		byte m_activeNodes = 0; // bitmask indicated which child nodes are actively used
 		const int MIN_SIZE = 1;
 		Octree* m_parent;
 
-		// Private constructor
-		Octree(BoundingBox region, std::vector<uint> entities);
 
-		void BuildTree();
+
+		Octree* CreateNode(BoundingBox region, std::vector<uint> entities);
 	public:
 		Octree();
 		Octree(BoundingBox region);
+		Octree(BoundingBox region, std::vector<uint> entities);
+
 		~Octree();
+		void BuildTree();
+
+
+		std::vector<std::pair<uint, uint>> GetIntersection(std::vector<uint> parentObjs);
 	};
 }
 

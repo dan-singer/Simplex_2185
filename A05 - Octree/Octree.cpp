@@ -58,7 +58,9 @@ void Octree::BuildTree()
 		MyEntity* entity = manager->GetEntity(m_entities[i]);
 		for (int a = 0; a < 8; ++a)
 		{
-			if (octants[a].CompletelyContains(BoundingBox(entity->GetRigidBody()->GetMinGlobal(), entity->GetRigidBody()->GetMaxGlobal())))
+			BoundingBox entityBox(entity->GetRigidBody()->GetMinGlobal(), entity->GetRigidBody()->GetMaxGlobal());
+
+			if (octants[a].CompletelyContains(entityBox))
 			{
 				octList[a].push_back(m_entities[i]);
 				delist.push_back(m_entities[i]);
@@ -70,10 +72,28 @@ void Octree::BuildTree()
 	// Remove objects that fit cleanly in one of the octants. Everything else remains part of this node because it must be intersecting
 	for (uint id : delist)
 	{
-		octList.erase(std::remove(octList.begin(), octList.end(), id));
+		m_entities.erase(std::remove(m_entities.begin(), m_entities.end(), id));
 	}
 
-	// TODO Make child nodes where there are items in the bounding region
+	// Make child nodes where there are items in the bounding region
+	for (int a = 0; a < 8; ++a)
+	{
+		if (octList[a].size() != 0)
+		{
+			m_childNodes[a] = CreateNode(octants[a], octList[a]);
+			m_activeNodes |= (1 << a);
+			m_childNodes[a]->BuildTree();
+		}
+	}
+}
+
+Octree* Simplex::Octree::CreateNode(BoundingBox region, std::vector<uint> entities)
+{
+	if (entities.size() == 0)
+		return nullptr;
+	Octree* ret = new Octree(region, entities);
+	ret->m_parent = this;
+	return ret;
 }
 
 Octree::Octree()
@@ -89,4 +109,58 @@ Octree::Octree(BoundingBox region)
 
 Octree::~Octree()
 {
+	for (int i = 0; i < 8; ++i) {
+		if (m_childNodes[i] != nullptr)
+			delete m_childNodes[i];
+	}
+	delete[] m_childNodes;
+}
+
+std::vector<std::pair<uint, uint>> Simplex::Octree::GetIntersection(std::vector<uint> parentObjs)
+{
+	std::vector<std::pair<uint, uint>> intersections;
+	MyEntityManager* manager = MyEntityManager::GetInstance();
+
+	// Check all parent objects against all objects in this node
+	for (int i = 0; i < parentObjs.size(); ++i)
+	{
+		MyEntity* parentObj = manager->GetEntity(parentObjs[i]);
+		for (int j = 0; j < m_entities.size(); ++j)
+		{
+			MyEntity* mObj = manager->GetEntity(m_entities[j]);
+			mObj->IsColliding(parentObj);
+		}
+	}
+	// Check local objects against all other local objects
+	if (m_entities.size() > 1)
+	{
+		for (int i = 0; i < m_entities.size() - 1; ++i)
+		{
+			MyEntity* objA = manager->GetEntity(m_entities[i]);
+			for (int j = i + 1; j < m_entities.size(); ++j)
+			{
+				MyEntity* objB = manager->GetEntity(m_entities[j]);
+				objA->IsColliding(objB);
+			}
+		}
+	}
+
+	// Merge local objects with parent objects list, then pass it down to children
+	for (uint entity : m_entities)
+	{
+		parentObjs.push_back(entity);
+	}
+
+	//each child node will give us a list of intersection records, which we then merge with our own intersection records.
+	for (int flags = m_activeNodes, index = 0; flags > 0; flags >>= 1, index++)
+	{
+		if ((flags & 1) == 1)
+		{
+			if (m_childNodes[index] != nullptr)
+			{
+				m_childNodes[index]->GetIntersection(parentObjs);
+			}
+		}
+	}
+	return intersections;
 }
