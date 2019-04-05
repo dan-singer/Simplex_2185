@@ -48,6 +48,39 @@ int Simplex::MyEntityManager::GetEntityIndex(String a_sUniqueID)
 }
 //Accessors
 Simplex::uint Simplex::MyEntityManager::GetEntityCount(void) {	return m_uEntityCount; }
+void Simplex::MyEntityManager::UpdateOctree()
+{
+	// Rebuild the octree
+	SafeDelete(m_octree);
+	std::vector<uint> ids;
+	for (int i = 0; i < m_uEntityCount; ++i)
+	{
+		ids.push_back(i);
+	}
+	vector3 min = m_mEntityArray[0]->GetRigidBody()->GetCenterGlobal(); 
+	vector3 max = min;
+	for (int i = 1; i < m_uEntityCount; ++i) {
+		vector3 pos = m_mEntityArray[i]->GetRigidBody()->GetCenterGlobal();
+		if (pos.x < min.x)
+			min.x = pos.x;
+		if (pos.x > max.x)
+			max.x = pos.x;
+		if (pos.y < min.y)
+			min.y = pos.y;
+		if (pos.y > max.y)
+			max.y = pos.y;
+		if (pos.z < min.z)
+			min.z = pos.z;
+		if (pos.z > max.z)
+			max.z = pos.z;
+	}
+	m_octree = new Simplex::Octree(BoundingBox(min, max), ids);
+	m_octree->BuildTree();
+}
+void Simplex::MyEntityManager::DisplayOctree()
+{
+	m_octree->Display();
+}
 Simplex::Model* Simplex::MyEntityManager::GetModel(uint a_uIndex)
 {
 	//if the list is empty return
@@ -184,19 +217,7 @@ void Simplex::MyEntityManager::Update(void)
 			m_mEntityArray[i]->IsColliding(m_mEntityArray[j]);
 		}
 	}*/
-	std::vector<uint> ids;
-	for (int i = 0; i < m_uEntityCount; ++i)
-	{
-		ids.push_back(i);
-	}
-
-
-
-	Octree tree(BoundingBox(vector3(-1000, -1000, -1000), vector3(1000, 1000, 1000)), ids);
-	tree.BuildTree();
-	//tree.GetIntersection(std::vector<uint>());
-	// TODO figure out why there is only like one child being attached
-	std::cout << tree.m_childNodes[0]->m_entities.size();
+	m_octree->GetIntersection(std::vector<uint>());
 
 }
 void Simplex::MyEntityManager::AddEntity(String a_sFileName, String a_sUniqueID)

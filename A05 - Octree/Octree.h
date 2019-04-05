@@ -2,7 +2,6 @@
 #define _OCTREE_H
 
 #include "Definitions.h"
-#include "MyEntityManager.h"
 
 /*
 Octree Class used for spacial optimization
@@ -52,6 +51,7 @@ namespace Simplex
 
 		~Octree();
 		void BuildTree();
+		void Display();
 
 
 		std::vector<std::pair<uint, uint>> GetIntersection(std::vector<uint> parentObjs);

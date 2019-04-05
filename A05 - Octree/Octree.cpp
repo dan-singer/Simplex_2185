@@ -1,5 +1,5 @@
 #include "Octree.h"
-
+#include "MyEntityManager.h"
 using namespace Simplex;
 
 Octree::Octree(BoundingBox region, std::vector<uint> entities)
@@ -17,11 +17,6 @@ void Octree::BuildTree()
 	}
 
 	vector3 dimensions = m_region.max - m_region.min;
-	if (dimensions == vector3(0, 0, 0)) 
-	{
-		// TODO call FindEnclosingCube
-		vector3 dimensions = m_region.max - m_region.min;
-	}
 
 	if (dimensions.x <= MIN_SIZE && dimensions.y <= MIN_SIZE && dimensions.z <= MIN_SIZE)
 	{
@@ -75,6 +70,10 @@ void Octree::BuildTree()
 		m_entities.erase(std::remove(m_entities.begin(), m_entities.end(), id));
 	}
 
+	// Display 
+	matrix4 modelMatrix = glm::translate(center) * glm::scale(dimensions);
+	MeshManager::GetInstance()->AddCubeToRenderList(modelMatrix, vector3(1, 1, 1));
+
 	// Make child nodes where there are items in the bounding region
 	for (int a = 0; a < 8; ++a)
 	{
@@ -83,6 +82,26 @@ void Octree::BuildTree()
 			m_childNodes[a] = CreateNode(octants[a], octList[a]);
 			m_activeNodes |= (1 << a);
 			m_childNodes[a]->BuildTree();
+		}
+	}
+}
+
+void Simplex::Octree::Display()
+{
+	vector3 dimensions = m_region.max - m_region.min;
+	vector3 half = dimensions / 2.0f;
+	vector3 center = m_region.min + half;
+	matrix4 modelMatrix = glm::translate(center) * glm::scale(dimensions);
+	MeshManager::GetInstance()->AddWireCubeToRenderList(modelMatrix, vector3(0, 0, 1));
+
+	for (int flags = m_activeNodes, index = 0; flags > 0; flags >>= 1, index++)
+	{
+		if ((flags & 1) == 1)
+		{
+			if (m_childNodes[index] != nullptr)
+			{
+				m_childNodes[index]->Display();
+			}
 		}
 	}
 }
