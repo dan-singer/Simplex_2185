@@ -250,10 +250,13 @@ public:
 	*/
 	uint GetEntityCount(void);
 
+	// Recreates the octree using provided number of subdivisions
 	void UpdateOctree(int levels);
 
+	// Displays the octree. Pass in -1 to display entire tree
 	void DisplayOctree(uint id);
 
+	// Returns the number of octants of the octree being used
 	uint GetOctantCount();
 private:
 	/*

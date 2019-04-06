@@ -115,13 +115,11 @@ void Application::ProcessKeyReleased(sf::Event a_event)
 		++m_uOctantID;
 		if (m_uOctantID >= m_pEntityMngr->GetOctantCount())
 			m_uOctantID = -1;
-		std::cout << m_uOctantID << '\n';
 
 		break;
 	case sf::Keyboard::PageDown:
 		if (m_uOctantID > -1)
 			--m_uOctantID;
-		std::cout << m_uOctantID << '\n';
 		break;
 	case sf::Keyboard::Add:
 		if (m_uOctantLevels < 4)
@@ -146,6 +144,9 @@ void Application::ProcessKeyReleased(sf::Event a_event)
 			m_pRoot = new MyOctant(m_uOctantLevels, 5);
 			*/
 		}
+		break;
+	case sf::Keyboard::F5:
+		m_displayOctree = !m_displayOctree;
 		break;
 	case sf::Keyboard::LShift:
 	case sf::Keyboard::RShift:

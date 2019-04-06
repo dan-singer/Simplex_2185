@@ -48,6 +48,7 @@ void Application::DrawGUI(void)
 			ImGui::Text("	 F2: Orthographic X\n");
 			ImGui::Text("	 F3: Orthographic Y\n");
 			ImGui::Text("	 F4: Orthographic Z\n");
+			ImGui::Text("	 F5: Toggle Octree Display\n");
 			ImGui::Separator();
 			ImGui::Text(" PageUp: Increment Octant display\n");
 			ImGui::Text(" PageDw: Decrement Octant display\n");

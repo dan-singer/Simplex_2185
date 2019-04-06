@@ -3,14 +3,14 @@
 
 #include "Definitions.h"
 
-/*
-Octree Class used for spacial optimization
-*/
 namespace Simplex
 {
+	// Small struct representing a bounding box that can detect if another boundingbox is completely contained in this box
 	struct BoundingBox {
 		vector3 min;
 		vector3 max;
+
+		// Default constructor
 		BoundingBox()
 		{
 
@@ -31,27 +31,41 @@ namespace Simplex
 		}
 	};
 
+
+	/*
+		Octree Class used for spacial optimization.
+		Based upon this tutorial: https://www.gamedev.net/articles/programming/general-and-gameplay-programming/introduction-to-octrees-r3529/
+	*/
 	class Octree
 	{
 	private:
 		BoundingBox m_region;
 		std::vector<uint> m_entities;
 		Octree** m_childNodes = new Octree*[8]{};
-		byte m_activeNodes = 0; // bitmask indicated which child nodes are actively used
 		const int MIN_SIZE = 1;
+		byte m_activeNodes = 0; // bitmask indicated which child nodes are actively used
 		Octree* m_parent;
+		// Attaches and creates an Octree node to this Octree
 		Octree* CreateNode(BoundingBox region, std::vector<uint> entities);
 	public:
+
+
 		Octree();
 		Octree(BoundingBox region);
 		Octree(BoundingBox region, std::vector<uint> entities);
-
+		// The actual building of the tree happens here
 		void BuildTree(int depth, int maxDepth);
+		// Display the entire octree
 		void Display();
-		void Display(uint targetIndex, uint curIndex = 0);
+		// Display one octant of this tree by index
+		void Display(uint targetIndex);
+		// Displays this octant but not its children
 		void DisplayOctantOnly();
+		// Returns the number of octants in this tree (Recursively)
 		uint GetOctantCount();
-		void GetIntersection(std::vector<uint> parentObjs = std::vector<uint>());
+		// Checks for collisions between all entities in this tree
+		void CheckCollisions(std::vector<uint> parentObjs = std::vector<uint>());
+		byte GetActiveNodes() { return m_activeNodes; }
 
 
 		~Octree();

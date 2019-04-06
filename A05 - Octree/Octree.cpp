@@ -105,8 +105,9 @@ void Simplex::Octree::Display()
 	}
 }
 
-void Simplex::Octree::Display(uint targetIndex, uint curIndex)
+void Simplex::Octree::Display(uint targetIndex)
 {
+	// Do a breadth first traversal to determine which id cooresponds to which octant
 	std::queue<Octree*> breadthQueue;
 	breadthQueue.push(this);
 	int counter = 0;
@@ -186,11 +187,11 @@ Octree::~Octree()
 	delete[] m_childNodes;
 }
 
-void Simplex::Octree::GetIntersection(std::vector<uint> parentObjs)
+void Simplex::Octree::CheckCollisions(std::vector<uint> parentObjs)
 {
 	MyEntityManager* manager = MyEntityManager::GetInstance();
 
-	// Check all parent parent objects against all objects in the local node
+	// Check all parent parent objects against all objects in the local node. Currently unused unless code below is uncommented
 	for (uint i = 0; i < parentObjs.size(); ++i)
 	{
 		MyEntity* parentObj = manager->GetEntity(parentObjs[i]);
@@ -231,7 +232,7 @@ void Simplex::Octree::GetIntersection(std::vector<uint> parentObjs)
 		{
 			if (m_childNodes[index] != nullptr)
 			{
-				m_childNodes[index]->GetIntersection(parentObjs);
+				m_childNodes[index]->CheckCollisions(parentObjs);
 			}
 		}
 	}

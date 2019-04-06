@@ -216,15 +216,20 @@ void Simplex::MyEntityManager::Update(void)
 	}
 
 	//check collisions
-	// TODO replace this with octree tests
-	/*for (uint i = 0; i < m_uEntityCount - 1; i++)
+	if (m_octree->GetActiveNodes() == 0)
 	{
-		for (uint j = i + 1; j < m_uEntityCount; j++)
+		for (uint i = 0; i < m_uEntityCount - 1; i++)
 		{
-			m_mEntityArray[i]->IsColliding(m_mEntityArray[j]);
+			for (uint j = i + 1; j < m_uEntityCount; j++)
+			{
+				m_mEntityArray[i]->IsColliding(m_mEntityArray[j]);
+			}
 		}
-	}*/
-	m_octree->GetIntersection();
+	}
+	else
+	{
+		m_octree->CheckCollisions();
+	}
 
 }
 void Simplex::MyEntityManager::AddEntity(String a_sFileName, String a_sUniqueID)
