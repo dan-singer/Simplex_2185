@@ -75,7 +75,7 @@ void Simplex::MyEntityManager::UpdateOctree()
 			max.z = pos.z;
 	}
 	m_octree = new Simplex::Octree(BoundingBox(min, max), ids);
-	m_octree->BuildTree();
+	m_octree->BuildTree(1, 3);
 }
 void Simplex::MyEntityManager::DisplayOctree()
 {
@@ -217,7 +217,7 @@ void Simplex::MyEntityManager::Update(void)
 			m_mEntityArray[i]->IsColliding(m_mEntityArray[j]);
 		}
 	}*/
-	m_octree->GetIntersection(std::vector<uint>());
+	m_octree->GetIntersection();
 
 }
 void Simplex::MyEntityManager::AddEntity(String a_sFileName, String a_sUniqueID)

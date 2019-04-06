@@ -8,8 +8,14 @@ Octree::Octree(BoundingBox region, std::vector<uint> entities)
 	m_entities = entities;
 }
 
-void Octree::BuildTree()
+void Octree::BuildTree(int depth, int maxDepth)
 {
+	// Terminate if we're too deep
+	if (depth > maxDepth)
+	{
+		return;
+	}
+
 	// Terminate if we're a leaf node
 	if (m_entities.size() <= 1)
 	{
@@ -70,9 +76,6 @@ void Octree::BuildTree()
 		m_entities.erase(std::remove(m_entities.begin(), m_entities.end(), id));
 	}
 
-	// Display 
-	matrix4 modelMatrix = glm::translate(center) * glm::scale(dimensions);
-	MeshManager::GetInstance()->AddCubeToRenderList(modelMatrix, vector3(1, 1, 1));
 
 	// Make child nodes where there are items in the bounding region
 	for (int a = 0; a < 8; ++a)
@@ -81,7 +84,7 @@ void Octree::BuildTree()
 		{
 			m_childNodes[a] = CreateNode(octants[a], octList[a]);
 			m_activeNodes |= (1 << a);
-			m_childNodes[a]->BuildTree();
+			m_childNodes[a]->BuildTree(depth + 1, maxDepth);
 		}
 	}
 }
@@ -135,21 +138,11 @@ Octree::~Octree()
 	delete[] m_childNodes;
 }
 
-std::vector<std::pair<uint, uint>> Simplex::Octree::GetIntersection(std::vector<uint> parentObjs)
+std::vector<std::pair<uint, uint>> Simplex::Octree::GetIntersection()
 {
 	std::vector<std::pair<uint, uint>> intersections;
 	MyEntityManager* manager = MyEntityManager::GetInstance();
 
-	// Check all parent objects against all objects in this node
-	for (int i = 0; i < parentObjs.size(); ++i)
-	{
-		MyEntity* parentObj = manager->GetEntity(parentObjs[i]);
-		for (int j = 0; j < m_entities.size(); ++j)
-		{
-			MyEntity* mObj = manager->GetEntity(m_entities[j]);
-			mObj->IsColliding(parentObj);
-		}
-	}
 	// Check local objects against all other local objects
 	if (m_entities.size() > 1)
 	{
@@ -164,12 +157,6 @@ std::vector<std::pair<uint, uint>> Simplex::Octree::GetIntersection(std::vector<
 		}
 	}
 
-	// Merge local objects with parent objects list, then pass it down to children
-	for (uint entity : m_entities)
-	{
-		parentObjs.push_back(entity);
-	}
-
 	//each child node will give us a list of intersection records, which we then merge with our own intersection records.
 	for (int flags = m_activeNodes, index = 0; flags > 0; flags >>= 1, index++)
 	{
@@ -177,7 +164,7 @@ std::vector<std::pair<uint, uint>> Simplex::Octree::GetIntersection(std::vector<
 		{
 			if (m_childNodes[index] != nullptr)
 			{
-				m_childNodes[index]->GetIntersection(parentObjs);
+				m_childNodes[index]->GetIntersection();
 			}
 		}
 	}

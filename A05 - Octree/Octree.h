@@ -50,11 +50,11 @@ namespace Simplex
 		Octree(BoundingBox region, std::vector<uint> entities);
 
 		~Octree();
-		void BuildTree();
+		void BuildTree(int depth, int maxDepth);
 		void Display();
 
 
-		std::vector<std::pair<uint, uint>> GetIntersection(std::vector<uint> parentObjs);
+		std::vector<std::pair<uint, uint>> GetIntersection();
 	};
 }
 
