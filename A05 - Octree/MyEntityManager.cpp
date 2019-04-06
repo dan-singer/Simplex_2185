@@ -48,7 +48,7 @@ int Simplex::MyEntityManager::GetEntityIndex(String a_sUniqueID)
 }
 //Accessors
 Simplex::uint Simplex::MyEntityManager::GetEntityCount(void) {	return m_uEntityCount; }
-void Simplex::MyEntityManager::UpdateOctree()
+void Simplex::MyEntityManager::UpdateOctree(int levels)
 {
 	// Rebuild the octree
 	SafeDelete(m_octree);
@@ -75,11 +75,18 @@ void Simplex::MyEntityManager::UpdateOctree()
 			max.z = pos.z;
 	}
 	m_octree = new Simplex::Octree(BoundingBox(min, max), ids);
-	m_octree->BuildTree(1, 3);
+	m_octree->BuildTree(1, levels);
 }
-void Simplex::MyEntityManager::DisplayOctree()
+void Simplex::MyEntityManager::DisplayOctree(uint id)
 {
-	m_octree->Display();
+	if (id == -1)
+		m_octree->Display();
+	else
+		m_octree->Display(id);
+}
+uint Simplex::MyEntityManager::GetOctantCount()
+{
+	return m_octree->GetOctantCount();
 }
 Simplex::Model* Simplex::MyEntityManager::GetModel(uint a_uIndex)
 {

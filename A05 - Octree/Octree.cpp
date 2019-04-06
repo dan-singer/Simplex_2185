@@ -1,5 +1,6 @@
 #include "Octree.h"
 #include "MyEntityManager.h"
+#include <queue>
 using namespace Simplex;
 
 Octree::Octree(BoundingBox region, std::vector<uint> entities)
@@ -91,12 +92,7 @@ void Octree::BuildTree(int depth, int maxDepth)
 
 void Simplex::Octree::Display()
 {
-	vector3 dimensions = m_region.max - m_region.min;
-	vector3 half = dimensions / 2.0f;
-	vector3 center = m_region.min + half;
-	matrix4 modelMatrix = glm::translate(center) * glm::scale(dimensions);
-	MeshManager::GetInstance()->AddWireCubeToRenderList(modelMatrix, vector3(0, 0, 1));
-
+	DisplayOctantOnly();
 	for (int flags = m_activeNodes, index = 0; flags > 0; flags >>= 1, index++)
 	{
 		if ((flags & 1) == 1)
@@ -107,6 +103,58 @@ void Simplex::Octree::Display()
 			}
 		}
 	}
+}
+
+void Simplex::Octree::Display(uint targetIndex, uint curIndex)
+{
+	std::queue<Octree*> breadthQueue;
+	breadthQueue.push(this);
+	int counter = 0;
+	while (!breadthQueue.empty())
+	{
+		Octree* current = breadthQueue.front();
+		breadthQueue.pop();
+		if (counter == targetIndex)
+		{
+			current->DisplayOctantOnly();
+			return;
+		}
+		counter++;
+		for (int flags = current->m_activeNodes, index = 0; flags > 0; flags >>= 1, index++)
+		{
+			if ((flags & 1) == 1)
+			{
+				if (current->m_childNodes[index] != nullptr)
+				{
+					breadthQueue.push(current->m_childNodes[index]);
+				}
+			}
+		}
+	}
+
+
+}
+
+void Simplex::Octree::DisplayOctantOnly()
+{
+	vector3 dimensions = m_region.max - m_region.min;
+	vector3 half = dimensions / 2.0f;
+	vector3 center = m_region.min + half;
+	matrix4 modelMatrix = glm::translate(center) * glm::scale(dimensions);
+	MeshManager::GetInstance()->AddWireCubeToRenderList(modelMatrix, vector3(0, 0, 1));
+}
+
+uint Simplex::Octree::GetOctantCount()
+{
+	int octants = 1;
+	for (int i = 0; i < 8; ++i)
+	{
+		if (m_childNodes[i])
+		{
+			octants += m_childNodes[i]->GetOctantCount();
+		}
+	}
+	return octants;
 }
 
 Octree* Simplex::Octree::CreateNode(BoundingBox region, std::vector<uint> entities)
@@ -138,10 +186,21 @@ Octree::~Octree()
 	delete[] m_childNodes;
 }
 
-std::vector<std::pair<uint, uint>> Simplex::Octree::GetIntersection()
+void Simplex::Octree::GetIntersection(std::vector<uint> parentObjs)
 {
-	std::vector<std::pair<uint, uint>> intersections;
 	MyEntityManager* manager = MyEntityManager::GetInstance();
+
+	// Check all parent parent objects against all objects in the local node
+	for (uint i = 0; i < parentObjs.size(); ++i)
+	{
+		MyEntity* parentObj = manager->GetEntity(parentObjs[i]);
+		for (uint j = 0; j < m_entities.size(); ++j)
+		{
+			MyEntity* mEntity = manager->GetEntity(m_entities[j]);
+			mEntity->IsColliding(parentObj);
+		}
+	}
+
 
 	// Check local objects against all other local objects
 	if (m_entities.size() > 1)
@@ -157,6 +216,14 @@ std::vector<std::pair<uint, uint>> Simplex::Octree::GetIntersection()
 		}
 	}
 
+	// Uncomment this to detect all collisions. This causes a major performance hit
+	/*
+	for (uint i = 0; i < m_entities.size(); ++i)
+	{
+		parentObjs.push_back(m_entities[i]);
+	}
+	*/
+
 	//each child node will give us a list of intersection records, which we then merge with our own intersection records.
 	for (int flags = m_activeNodes, index = 0; flags > 0; flags >>= 1, index++)
 	{
@@ -164,9 +231,8 @@ std::vector<std::pair<uint, uint>> Simplex::Octree::GetIntersection()
 		{
 			if (m_childNodes[index] != nullptr)
 			{
-				m_childNodes[index]->GetIntersection();
+				m_childNodes[index]->GetIntersection(parentObjs);
 			}
 		}
 	}
-	return intersections;
 }

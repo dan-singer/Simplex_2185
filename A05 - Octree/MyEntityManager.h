@@ -250,9 +250,11 @@ public:
 	*/
 	uint GetEntityCount(void);
 
-	void UpdateOctree();
+	void UpdateOctree(int levels);
 
-	void DisplayOctree();
+	void DisplayOctree(uint id);
+
+	uint GetOctantCount();
 private:
 	/*
 	Usage: constructor

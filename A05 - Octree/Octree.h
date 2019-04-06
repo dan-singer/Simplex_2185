@@ -33,28 +33,29 @@ namespace Simplex
 
 	class Octree
 	{
-	public:
+	private:
 		BoundingBox m_region;
 		std::vector<uint> m_entities;
 		Octree** m_childNodes = new Octree*[8]{};
 		byte m_activeNodes = 0; // bitmask indicated which child nodes are actively used
 		const int MIN_SIZE = 1;
 		Octree* m_parent;
-
-
-
 		Octree* CreateNode(BoundingBox region, std::vector<uint> entities);
 	public:
 		Octree();
 		Octree(BoundingBox region);
 		Octree(BoundingBox region, std::vector<uint> entities);
 
-		~Octree();
 		void BuildTree(int depth, int maxDepth);
 		void Display();
+		void Display(uint targetIndex, uint curIndex = 0);
+		void DisplayOctantOnly();
+		uint GetOctantCount();
+		void GetIntersection(std::vector<uint> parentObjs = std::vector<uint>());
 
 
-		std::vector<std::pair<uint, uint>> GetIntersection();
+		~Octree();
+
 	};
 }
 
